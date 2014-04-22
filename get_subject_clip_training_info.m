@@ -61,6 +61,8 @@ phi_theo_sum = zeros(length(object_theta(:))+length(attribute_theta(:)) + ...
 phi_emp_sum = zeros(length(object_theta(:))+length(attribute_theta(:)) + ...
     length(low_theta(:)),1);
 Hessian = zeros(D, D);
+log_likelihood = 0;
+full_theta = [object_theta(:); attribute_theta(:); low_theta(:)];
 
 %These set the previous objects to unlabeled and the gaze to 1,1. Not super
 %clean - just a start
@@ -75,13 +77,13 @@ for gaze_num = 1:size(gaze,1)
     frame = frame_nums(gaze_num) - frame_endpoints(current_folder);
 
     %[semantic_frame, unique_object_inds] = get_full_frame_semantics(annotation_file,frame);
-    
+
     semantic_frame_name = ['annotations/',clip_folders(current_folder).name,...
                 '/saved_semantic_frames/frame_',num2str(frame),'.mat'];
     load(semantic_frame_name);
     semantic_frame = frame_info.semantic_frame;
     unique_object_inds = frame_info.unique_object_inds;
-    
+
     current_objects = semantic_frame(:,:,1);
     %CHANGE THIS ONCE WE GET LOW LEVEL FEATURES
     low_frame = ones(height, width, 5);
@@ -124,6 +126,8 @@ for gaze_num = 1:size(gaze,1)
     phi_theo_low_contribution = ...
         sum(sum(bsxfun(@times,low_frame,current_frame_p),1),2);
 
+
+
     full_phi_theo_contribution = ...
         [phi_theo_object_contribution(:); ...
         phi_theo_attribute_contribution(:);phi_theo_low_contribution(:)];
@@ -135,19 +139,28 @@ for gaze_num = 1:size(gaze,1)
     phi_theo_sum = phi_theo_sum + full_phi_theo_contribution;
 
 
-%     phi_object = zeres(100, 1);
+    phi_object = zeres(100, 1);
 %     low_frame = rand();
     %% Get Hessian given from this frame at time t
-%     for i_height = 1 : height
-%         for i_width = 1 : width
-%             full_phi = [phi_theo_object(i_height, i_width)...
-%                     semantic_frame(i_height,i_width,2:end)];
-%             diff_mat = (full_phi' * full_phi) * current_frame_p(i_height, i_width);
-%             Hessian = Hessian - diff_mat;
-%             full_phi_exp = full_phi * current_frame_p(i_height, i_width);
-%             Hessian = Hessian + full_phi_exp' * full_phi_exp;
-%         end
+    for i_height = 1 : height
+        for i_width = 1 : width
+            full_phi = [phi_theo_object(i_height, i_width)...
+                    semantic_frame(i_height,i_width,2:end)];
+            diff_mat = (full_phi' * full_phi) * current_frame_p(i_height, i_width);
+            Hessian = Hessian - diff_mat;
+            full_phi_exp = full_phi * current_frame_p(i_height, i_width);
+            Hessian = Hessian + full_phi_exp' * full_phi_exp;
+        end
+    end
+
+
+%     for d = 1 : D
+%         phi_theo_object(:,:,d) = phi_theo_object * full_theta(d);
+%         semantic_frame(:,:,d) = semantic_frame(:,:,d) * full_theta(d);
+%         low_frame(:,:,d) = low_frame(:,:,d) * full_theta(d);
 %     end
+%     full_feature = cat(3, phi_theo_object, semantic_frame, low_frame);
+%     log_likelihood = log(sum(sum(exp(sum(full_feature, 3)))));
 
     %% Get empirical phi from this frame
 
@@ -173,7 +186,7 @@ for gaze_num = 1:size(gaze,1)
 end
 
 derivation = phi_emp_sum - phi_theo_sum;
-
+log_likelihood = log_likelihood - phi_emp_sum * full_theta;
 
 
 
