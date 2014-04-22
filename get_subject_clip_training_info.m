@@ -8,8 +8,12 @@ height = 1024;
 width = 1280;
 D = 100;
 
-%make sure low and attribute theta are the right shape
+%make sure low and attribute theta are the right shape, Assert not really
+%necessary anymore
+attribute_theta = reshape(attribute_theta,[1 1 9]);
 assert(isequal(size(attribute_theta),[1 1 9]));
+low_theta = reshape(low_theta,[1 1 5]);
+assert(isequal(size(low_theta),[1 1 5]));
 %assert(isequal(size(low_theta),[1 1 5]));
 
 %open data folder
@@ -70,7 +74,14 @@ for gaze_num = 1:size(gaze,1)
     annotation_file = ['annotations/',clip_folders(current_folder).name,'/annot.txt'];
     frame = frame_nums(gaze_num) - frame_endpoints(current_folder);
 
-    [semantic_frame, unique_object_inds] = get_full_frame_semantics(annotation_file,frame);
+    %[semantic_frame, unique_object_inds] = get_full_frame_semantics(annotation_file,frame);
+    
+    semantic_frame_name = ['annotations/',clip_folders(current_folder).name,...
+                '/saved_semantic_frames/frame_',num2str(frame),'.mat'];
+    load(semantic_frame_name);
+    semantic_frame = frame_info.semantic_frame;
+    unique_object_inds = frame_info.unique_object_inds;
+    
     current_objects = semantic_frame(:,:,1);
     %CHANGE THIS ONCE WE GET LOW LEVEL FEATURES
     low_frame = ones(height, width, 5);
