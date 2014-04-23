@@ -6,7 +6,7 @@ function [phi_emp_sum, phi_theo_sum, derivation, sum_Hessian, num_points] = get_
 %set height and width to fixed frame parameters
 height = 1024;
 width = 1280;
-D = 100;
+D = 114;
 
 %make sure low and attribute theta are the right shape, Assert not really
 %necessary anymore
@@ -60,7 +60,12 @@ phi_theo_sum = zeros(length(object_theta(:))+length(attribute_theta(:)) + ...
     length(low_theta(:)),1);
 phi_emp_sum = zeros(length(object_theta(:))+length(attribute_theta(:)) + ...
     length(low_theta(:)),1);
+
+
 sum_Hessian = zeros(D, D);
+log_likelihood = 0;
+full_theta = [object_theta(:); attribute_theta(:); low_theta(:)];
+
 
 %These set the previous objects to unlabeled and the gaze to 1,1. Not super
 %clean - just a start
@@ -82,7 +87,7 @@ for gaze_num = 1:size(gaze,1)
     load(semantic_frame_name);
     semantic_frame = frame_info.semantic_frame;
     unique_object_inds = frame_info.unique_object_inds;
-    
+
     current_objects = semantic_frame(:,:,1);
     
     %LOAD LOW LEVEL FEATURES
@@ -130,6 +135,7 @@ for gaze_num = 1:size(gaze,1)
     phi_theo_low_contribution = ...
         sum(sum(bsxfun(@times,low_frame,current_frame_p),1),2);
 
+    
     %Assemble the full phi theoretical p-sum for this frame
     full_phi_theo_contribution = ...
         [phi_theo_object_contribution(:); ...
@@ -146,8 +152,6 @@ for gaze_num = 1:size(gaze,1)
     
     %-----------GO OVER THIS WITH AI----------------------
     
-    
-
     %phi_object = sparse(zeres(100, 1));
     low_frame = rand();
     % Get Hessian given from this frame at time t
@@ -212,7 +216,7 @@ for gaze_num = 1:size(gaze,1)
 end
 
 derivation = phi_emp_sum - phi_theo_sum;
-
+log_likelihood = log_likelihood - phi_emp_sum * full_theta;
 
 
 
