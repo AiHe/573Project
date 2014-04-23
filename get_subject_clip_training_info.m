@@ -74,8 +74,9 @@ for gaze_num = 1:size(gaze,1)
     annotation_file = ['annotations/',clip_folders(current_folder).name,'/annot.txt'];
     frame = frame_nums(gaze_num) - frame_endpoints(current_folder);
 
-    %[semantic_frame, unique_object_inds] = get_full_frame_semantics(annotation_file,frame);
     
+    %LOAD SEMANTIC FRAMES INSTEAD OF COMPUTING THEM
+    %[semantic_frame, unique_object_inds] = get_full_frame_semantics(annotation_file,frame);
     semantic_frame_name = ['annotations/',clip_folders(current_folder).name,...
                 '/saved_semantic_frames/frame_',num2str(frame),'.mat'];
     load(semantic_frame_name);
@@ -83,9 +84,12 @@ for gaze_num = 1:size(gaze,1)
     unique_object_inds = frame_info.unique_object_inds;
     
     current_objects = semantic_frame(:,:,1);
-    %CHANGE THIS ONCE WE GET LOW LEVEL FEATURES
     
-    low_frame = ones(height, width, 5);
+    %LOAD LOW LEVEL FEATURES
+    low_frame_name = ['saved_low_frames/',clip_string,'/frame_'...
+        num2str(frame_nums(gaze_num)),'.mat'];
+    load(low_frame_name);
+    low_frame = imresize(low_frame,height/size(low_frame,1));
 
     %get the probability distribution over the frame
     current_frame_p = p_frame(previous_gaze,previous_objects,semantic_frame,...
