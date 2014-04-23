@@ -1,4 +1,4 @@
-function [phi_emp_sum, phi_theo_sum, derivation, Hessian, num_points] = get_subject_clip_training_info(...
+function [phi_emp_sum, phi_theo_sum, derivation, sum_Hessian, num_points] = get_subject_clip_training_info(...
     subject_type,subject_num,object_theta,attribute_theta,low_theta)
 %UNTITLED34 Summary of this function goes here
 %   Detailed explanation goes here
@@ -60,7 +60,7 @@ phi_theo_sum = zeros(length(object_theta(:))+length(attribute_theta(:)) + ...
     length(low_theta(:)),1);
 phi_emp_sum = zeros(length(object_theta(:))+length(attribute_theta(:)) + ...
     length(low_theta(:)),1);
-Hessian = zeros(D, D);
+sum_Hessian = zeros(D, D);
 
 %These set the previous objects to unlabeled and the gaze to 1,1. Not super
 %clean - just a start
@@ -84,6 +84,7 @@ for gaze_num = 1:size(gaze,1)
     
     current_objects = semantic_frame(:,:,1);
     %CHANGE THIS ONCE WE GET LOW LEVEL FEATURES
+    
     low_frame = ones(height, width, 5);
 
     %get the probability distribution over the frame
@@ -105,49 +106,83 @@ for gaze_num = 1:size(gaze,1)
     unique_combos = [previous_object_num*ones(size(unique_object_inds)) unique_object_inds];
     unique_inds = sub2ind(size(object_theta),unique_combos(:,1),unique_combos(:,2));
 
+    %Get the object portion of phi theoretical p-sum for this frame
     phi_theo_object_contribution = zeros(100,1);
     for transition = 1:size(unique_combos,1)
         phi_theo_object_contribution(unique_inds(transition)) = ...
             sum(sum(current_frame_p(func_inds==unique_inds(transition)),1),2);
     end
 
-    %Get the attribute phi theoretical p-sum
+    %Get the attribute phi theoretical p-sum for this frame
 %     phi_theo_attribute_contribution = ...
 %         sum(sum(bsxfun(@times,semantic_frame(:,:,2:end),attribute_theta),1),2);
     phi_theo_attribute_contribution = ...
         sum(sum(bsxfun(@times,semantic_frame(:,:,2:end),current_frame_p),1),2);
 
 
-    %Get the low phi theoretical p-sum
+    %Get the low phi theoretical p-sum for this frame
 %     phi_theo_low_contribution = ...
 %         sum(sum(bsxfun(@times,low_frame,low_theta),1),2);
     phi_theo_low_contribution = ...
         sum(sum(bsxfun(@times,low_frame,current_frame_p),1),2);
 
+    %Assemble the full phi theoretical p-sum for this frame
     full_phi_theo_contribution = ...
         [phi_theo_object_contribution(:); ...
         phi_theo_attribute_contribution(:);phi_theo_low_contribution(:)];
 
-    %DIVIDE BY SUM P
+    %DIVIDE BY SUM P TO GET THE THEORETICAL EXPECTATION OF PHI FOR THIS
+    %FRAME
     full_phi_theo_contribution = full_phi_theo_contribution/sum(sum(current_frame_p));
 
-    %add contribution into phi_theo_sum
+    %ADD THE CONTRIBUTION TO THE FULL SUM TO EVENTUALLY GET MEAN
+    %THEORETICAL PHI OVER ALL FRAME LOCATIONS AND ALL FRAMES
     phi_theo_sum = phi_theo_sum + full_phi_theo_contribution;
 
+    
+    %-----------GO OVER THIS WITH AI----------------------
+    
+    
 
-%     phi_object = zeres(100, 1);
-%     low_frame = rand();
-    %% Get Hessian given from this frame at time t
-%     for i_height = 1 : height
-%         for i_width = 1 : width
+    %phi_object = sparse(zeres(100, 1));
+    low_frame = rand();
+    % Get Hessian given from this frame at time t
+    for i_height = 1 : height
+        for i_width = 1 : width
+            
+            indexes = [func_inds(i_height,i_width);(101:114)'];
+            vals = [1;semantic_frame(i_height,i_width,2:end);...
+                low_frame(i_height,i_width,:)];
+            
+            full_phi = sparse(indexes,1,vals,114,1);
+            
+            frame_phi_outer_product = frame_phi_outer_product + full_phi*full_phi';
+            
+            
+            
+%             %GET THE OBJECT PART RIGHT
+%             phi_object(func_inds(i_height,i_width)) = 1;
+%             
 %             full_phi = [phi_theo_object(i_height, i_width)...
 %                     semantic_frame(i_height,i_width,2:end)];
 %             diff_mat = (full_phi' * full_phi) * current_frame_p(i_height, i_width);
 %             Hessian = Hessian - diff_mat;
 %             full_phi_exp = full_phi * current_frame_p(i_height, i_width);
 %             Hessian = Hessian + full_phi_exp' * full_phi_exp;
-%         end
-%     end
+%             
+%             
+%             %CHANGE THE OBJECT PART BACK TO ZEROS SO IT CAN BE REUSED FOR
+%             %THE NEXT LOOP ITERATION WITHOUT REALLOCATING THE FULL VEC
+%             phi_object(func_inds(i_height,i_width)) = 0;
+        end
+    end
+    
+    frame_phi_outer_product = frame_phi_outer_product/height/width;
+    
+    sum_Hessian = sum_Hessian + frame_phi_outer_product - ...
+        full_phi_theo_contribution*full_phi_theo_contribution';
+    
+    %-------------------GO OVER THIS ^^^ WITH AI------------------------
 
     %% Get empirical phi from this frame
 
