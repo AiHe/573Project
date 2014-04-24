@@ -151,44 +151,70 @@ for gaze_num = 1:size(gaze,1)
 
     
     %-----------GO OVER THIS WITH AI----------------------
+    sample_factor = 1;
+    dw = floor((width-1)/sample_factor)+1;
+    dh = floor((height-1)/sample_factor)+1;
     
-    %phi_object = sparse(zeres(100, 1));
-    low_frame = rand();
-    % Get Hessian given from this frame at time t
-    for i_height = 1 : height
-        for i_width = 1 : width
-            
-            indexes = [func_inds(i_height,i_width);(101:114)'];
-            vals = [1;semantic_frame(i_height,i_width,2:end);...
-                low_frame(i_height,i_width,:)];
-            
-            full_phi = sparse(indexes,1,vals,114,1);
-            
-            frame_phi_outer_product = frame_phi_outer_product + full_phi*full_phi';
-            
-            
-            
-%             %GET THE OBJECT PART RIGHT
-%             phi_object(func_inds(i_height,i_width)) = 1;
-%             
-%             full_phi = [phi_theo_object(i_height, i_width)...
-%                     semantic_frame(i_height,i_width,2:end)];
-%             diff_mat = (full_phi' * full_phi) * current_frame_p(i_height, i_width);
-%             Hessian = Hessian - diff_mat;
-%             full_phi_exp = full_phi * current_frame_p(i_height, i_width);
-%             Hessian = Hessian + full_phi_exp' * full_phi_exp;
-%             
-%             
-%             %CHANGE THE OBJECT PART BACK TO ZEROS SO IT CAN BE REUSED FOR
-%             %THE NEXT LOOP ITERATION WITHOUT REALLOCATING THE FULL VEC
-%             phi_object(func_inds(i_height,i_width)) = 0;
-        end
-    end
+    %DOWN SAMPLE P_FRAME
+    down_sampled_p = current_frame_p(1:sample_factor:end,...
+        1:sample_factor:end);
+    down_sampled_p = down_sampled_p(:)';
     
-    frame_phi_outer_product = frame_phi_outer_product/height/width;
+    %DOWN SAMPLE OBJECT IMAGE, SPARSIFY INTO A 100xlength(IMAGE) MAT
+    object_inds_down_sampled = func_inds(1:sample_factor:end,...
+        1:sample_factor:end);
+    sparse_object_frame_mat = sparse(object_inds_down_sampled(:),...
+        (1:dh*dw)',ones(dw*dh,1),100,dw*dh);
+    p_mult_object_frame = sparse(object_inds_down_sampled(:),...
+        (1:dh*dw)',down_sampled_p,100,dw*dh);
     
-    sum_Hessian = sum_Hessian + frame_phi_outer_product - ...
-        full_phi_theo_contribution*full_phi_theo_contribution';
+    
+    %DOWN SAMPLE NON-OBJECT IMAGE
+    non_object_down_sampled = semantic_frame(1:sample_factor:end,...
+        1:sample_factor:end,2:end);
+    non_object_down_sampled(:,:,10:14) = low_frame(1:sample_factor:end,...
+        1:sample_factor:end,:);
+    %RESHAPE TO A 14xlength(IMAGE) MAT
+    non_object_frame_mat = reshape(non_object_down_sampled,[dw*dh,14])';
+    
+    %COMPUTE P-MULT VERSION
+    % Object version above
+    p_mult_non_frame = bsxfun(@times,non_object_frame_mat,down_sampled_p);
+    
+    %COMPUTE FULL OUTER PRODUCT BLOCKWISE
+    full_frame_outer_product = [p_mult_object_frame*sparse_object_frame_mat'...
+        p_mult_object_frame*non_object_frame_mat';...
+        p_mult_non_frame*sparse_object_frame_mat'...
+        p_mult_non_frame*non_object_frame_mat'];
+    
+    %ADD HESSIAN CONTRIBUTION
+    sum_Hessian = sum_Hessian + full_frame_outer_product/dw/dh - ...
+         full_phi_theo_contribution*full_phi_theo_contribution';
+
+    
+%     % Get Hessian given from this frame at time t
+%     frame_phi_outer_product = sparse(zeros(length(phi_theo_sum)));
+%     for i_height = 1 :10: height
+%         for i_width = 1 :10: width
+%             
+%             indexes = [func_inds(i_height,i_width);(101:114)'];
+% %             vals = [1;semantic_frame(i_height,i_width,2:end);...
+% %                 low_frame(i_height,i_width,:)];
+%             vals = zeros(15,1);
+%             vals(1) = 1; vals(2:10) = semantic_frame(i_height,i_width,2:end);
+%             vals(11:15) = low_frame(i_height,i_width,:);
+%             
+%             full_phi = sparse(indexes,ones(15,1),vals,114,1);
+%             
+%             frame_phi_outer_product = frame_phi_outer_product + full_phi*full_phi';
+%             
+%         end
+%     end
+%     
+%     frame_phi_outer_product = frame_phi_outer_product/height/width;
+%     
+%     sum_Hessian = sum_Hessian + frame_phi_outer_product - ...
+%         full_phi_theo_contribution*full_phi_theo_contribution';
     
     %-------------------GO OVER THIS ^^^ WITH AI------------------------
 
@@ -216,7 +242,7 @@ for gaze_num = 1:size(gaze,1)
 end
 
 derivation = phi_emp_sum - phi_theo_sum;
-log_likelihood = log_likelihood - phi_emp_sum * full_theta;
+%log_likelihood = log_likelihood - phi_emp_sum * full_theta;
 
 
 
