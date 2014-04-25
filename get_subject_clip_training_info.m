@@ -99,6 +99,7 @@ for gaze_num = 1:size(gaze,1)
     %get the probability distribution over the frame
     current_frame_p = p_frame(previous_gaze,previous_objects,semantic_frame,...
         low_frame,object_theta,attribute_theta,low_theta);
+    
     % normalization
     current_frame_p = (current_frame_p) / sum(sum(current_frame_p));
     
