@@ -29,8 +29,12 @@ low_contribution = sum(bsxfun(@times,low_frame,low_theta),3);
 % imshow(n(low_contribution));
 % uiwait();
 
+% keep numerical stability
+full_contribution = object_contribution + attribute_contribution + low_contribution;
+full_contribution = full_contribution - max(max(full_contribution));
 
-p = exp(object_contribution + attribute_contribution + low_contribution);
+% operate like +1 smoothing
+p = exp(full_contribution) + realmin;
 
 
 

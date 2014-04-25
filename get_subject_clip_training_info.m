@@ -1,5 +1,5 @@
-function [phi_emp_sum, phi_theo_sum, derivation, sum_Hessian, num_points] = get_subject_clip_training_info(...
-    subject_type,subject_num,object_theta,attribute_theta,low_theta)
+function [phi_emp_sum, phi_theo_sum, log_likelihood, sum_Hessian, num_points] = get_subject_clip_training_info(...
+    subject_type,subject_num,object_theta,attribute_theta,low_theta,visualize)
 %UNTITLED34 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -64,7 +64,7 @@ phi_emp_sum = zeros(length(object_theta(:))+length(attribute_theta(:)) + ...
 
 sum_Hessian = zeros(D, D);
 log_likelihood = 0;
-full_theta = [object_theta(:); attribute_theta(:); low_theta(:)];
+% full_theta = [object_theta(:); attribute_theta(:); low_theta(:)];
 
 
 %These set the previous objects to unlabeled and the gaze to 1,1. Not super
@@ -88,7 +88,7 @@ for gaze_num = 1:size(gaze,1)
     semantic_frame = frame_info.semantic_frame;
     unique_object_inds = frame_info.unique_object_inds;
 
-    current_objects = semantic_frame(:,:,1);
+%     current_objects = semantic_frame(:,:,1);
     
     %LOAD LOW LEVEL FEATURES
     low_frame_name = ['saved_low_frames/',clip_string,'/frame_'...
@@ -99,7 +99,16 @@ for gaze_num = 1:size(gaze,1)
     %get the probability distribution over the frame
     current_frame_p = p_frame(previous_gaze,previous_objects,semantic_frame,...
         low_frame,object_theta,attribute_theta,low_theta);
-
+    % normalization
+    current_frame_p = (current_frame_p) / sum(sum(current_frame_p));
+    
+    % visualize how the distribution looks like
+    if exist('visualize','var') && ~isempty(visualize) && visualize
+        figure(1);
+        hold on;
+        image(current_frame_p * 10000);
+        drawnow;
+    end
 
     %% Get the object phi theoretical p-sum
 
@@ -239,9 +248,11 @@ for gaze_num = 1:size(gaze,1)
     %% update so the next frame can use transitions from this one
     previous_objects = semantic_frame(:,:,1);
     previous_gaze = gaze_loc;
+    
+    log_likelihood = log_likelihood + log(current_frame_p(gaze_loc(2),gaze_loc(1)));
 end
 
-derivation = phi_emp_sum - phi_theo_sum;
+% derivation = phi_emp_sum - phi_theo_sum;
 %log_likelihood = log_likelihood - phi_emp_sum * full_theta;
 
 
