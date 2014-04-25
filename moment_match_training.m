@@ -34,7 +34,7 @@ function [ full_theta_1 ] = moment_match_training( subject_type, subject_num )
         low_theta = full_theta_1(d_object_theta^2+d_attribute_theta+1: end);
         
         [phi_emp_sum, phi_theo_sum, ll_1, sum_Hessian, num_points] = get_subject_clip_training_info(...
-            subject_type,subject_num,object_theta,attribute_theta,low_theta);
+            subject_type,subject_num,object_theta,attribute_theta,low_theta,true);
         
         derivation = phi_emp_sum - phi_theo_sum;
         

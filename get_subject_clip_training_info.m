@@ -159,46 +159,46 @@ for gaze_num = 1:size(gaze,1)
     phi_theo_sum = phi_theo_sum + full_phi_theo_contribution;
 
     
-    %-----------GO OVER THIS WITH AI----------------------
-    sample_factor = 1;
-    dw = floor((width-1)/sample_factor)+1;
-    dh = floor((height-1)/sample_factor)+1;
-    
-    %DOWN SAMPLE P_FRAME
-    down_sampled_p = current_frame_p(1:sample_factor:end,...
-        1:sample_factor:end);
-    down_sampled_p = down_sampled_p(:)';
-    
-    %DOWN SAMPLE OBJECT IMAGE, SPARSIFY INTO A 100xlength(IMAGE) MAT
-    object_inds_down_sampled = func_inds(1:sample_factor:end,...
-        1:sample_factor:end);
-    sparse_object_frame_mat = sparse(object_inds_down_sampled(:),...
-        (1:dh*dw)',ones(dw*dh,1),100,dw*dh);
-    p_mult_object_frame = sparse(object_inds_down_sampled(:),...
-        (1:dh*dw)',down_sampled_p,100,dw*dh);
-    
-    
-    %DOWN SAMPLE NON-OBJECT IMAGE
-    non_object_down_sampled = semantic_frame(1:sample_factor:end,...
-        1:sample_factor:end,2:end);
-    non_object_down_sampled(:,:,10:14) = low_frame(1:sample_factor:end,...
-        1:sample_factor:end,:);
-    %RESHAPE TO A 14xlength(IMAGE) MAT
-    non_object_frame_mat = reshape(non_object_down_sampled,[dw*dh,14])';
-    
-    %COMPUTE P-MULT VERSION
-    % Object version above
-    p_mult_non_frame = bsxfun(@times,non_object_frame_mat,down_sampled_p);
-    
-    %COMPUTE FULL OUTER PRODUCT BLOCKWISE
-    full_frame_outer_product = [p_mult_object_frame*sparse_object_frame_mat'...
-        p_mult_object_frame*non_object_frame_mat';...
-        p_mult_non_frame*sparse_object_frame_mat'...
-        p_mult_non_frame*non_object_frame_mat'];
-    
-    %ADD HESSIAN CONTRIBUTION
-    sum_Hessian = sum_Hessian + full_frame_outer_product/dw/dh - ...
-         full_phi_theo_contribution*full_phi_theo_contribution';
+%     %-----------GO OVER THIS WITH AI----------------------
+%     sample_factor = 1;
+%     dw = floor((width-1)/sample_factor)+1;
+%     dh = floor((height-1)/sample_factor)+1;
+%     
+%     %DOWN SAMPLE P_FRAME
+%     down_sampled_p = current_frame_p(1:sample_factor:end,...
+%         1:sample_factor:end);
+%     down_sampled_p = down_sampled_p(:)';
+%     
+%     %DOWN SAMPLE OBJECT IMAGE, SPARSIFY INTO A 100xlength(IMAGE) MAT
+%     object_inds_down_sampled = func_inds(1:sample_factor:end,...
+%         1:sample_factor:end);
+%     sparse_object_frame_mat = sparse(object_inds_down_sampled(:),...
+%         (1:dh*dw)',ones(dw*dh,1),100,dw*dh);
+%     p_mult_object_frame = sparse(object_inds_down_sampled(:),...
+%         (1:dh*dw)',down_sampled_p,100,dw*dh);
+%     
+%     
+%     %DOWN SAMPLE NON-OBJECT IMAGE
+%     non_object_down_sampled = semantic_frame(1:sample_factor:end,...
+%         1:sample_factor:end,2:end);
+%     non_object_down_sampled(:,:,10:14) = low_frame(1:sample_factor:end,...
+%         1:sample_factor:end,:);
+%     %RESHAPE TO A 14xlength(IMAGE) MAT
+%     non_object_frame_mat = reshape(non_object_down_sampled,[dw*dh,14])';
+%     
+%     %COMPUTE P-MULT VERSION
+%     % Object version above
+%     p_mult_non_frame = bsxfun(@times,non_object_frame_mat,down_sampled_p);
+%     
+%     %COMPUTE FULL OUTER PRODUCT BLOCKWISE
+%     full_frame_outer_product = [p_mult_object_frame*sparse_object_frame_mat'...
+%         p_mult_object_frame*non_object_frame_mat';...
+%         p_mult_non_frame*sparse_object_frame_mat'...
+%         p_mult_non_frame*non_object_frame_mat'];
+%     
+%     %ADD HESSIAN CONTRIBUTION
+%     sum_Hessian = sum_Hessian + full_frame_outer_product/dw/dh - ...
+%          full_phi_theo_contribution*full_phi_theo_contribution';
 
     
 %     % Get Hessian given from this frame at time t
