@@ -2,6 +2,15 @@ function [ full_theta_1 ] = moment_match_training( subject_type, subject_num )
 %moment_match_training training
 %   Detailed explanation goes here
 
+% %Load the appropriate clip IDS
+% if train
+%     load('train_IDS');
+% else
+%     lost('test_IDS');
+% end
+
+
+
 %     eta = 1;
 %     epsilon = 1e-5;
 %     max_t = 50;
@@ -28,7 +37,7 @@ function [ full_theta_1 ] = moment_match_training( subject_type, subject_num )
     options.useMex = 1;
 %         options.DERIVATIVECHECK = 1;
     full_theta_0 = [object_theta(:); attribute_theta(:); low_theta(:)];
-    full_theta_1 = minFunc(@(theta) get_subject_clip_training_info_4opt(theta, subject_type,subject_num),full_theta_0,options);
+    full_theta_1 = minFunc(@(theta) gradient_wrapper(theta, subject_type,subject_num),full_theta_0,options);
     
     %% previous method
 %         
