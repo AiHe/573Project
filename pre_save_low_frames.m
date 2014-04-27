@@ -34,7 +34,7 @@ for i = 1:length(files)
     for frame_num = 1:size(C,3)
         
         frame_name = ['saved_low_frames/',files(i).name,'/frame_',...
-            num2str(frame_num),'.mat'];
+            num2str(frame_num-1),'.mat'];
     
         low_frame(:,:,1) = C(:,:,frame_num);
         low_frame(:,:,2) = F(:,:,frame_num);

@@ -266,6 +266,6 @@ end
 
 log_likelihood = -log_likelihood;
 derivative = phi_theo_sum - phi_emp_sum;
-fprintf('log-likelihood value: %e\n', log_likelihood);
+
 
 end

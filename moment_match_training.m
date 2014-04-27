@@ -1,4 +1,4 @@
-function [ full_theta_1 ] = moment_match_training( subject_type, subject_num )
+function [ full_theta_1 ] = moment_match_training()
 %moment_match_training training
 %   Detailed explanation goes here
 
@@ -9,7 +9,10 @@ function [ full_theta_1 ] = moment_match_training( subject_type, subject_num )
 %     lost('test_IDS');
 % end
 
+addpath('minFunc_2012/');
 
+
+num_s_clips = 1;
 
 %     eta = 1;
 %     epsilon = 1e-5;
@@ -37,7 +40,7 @@ function [ full_theta_1 ] = moment_match_training( subject_type, subject_num )
     options.useMex = 1;
 %         options.DERIVATIVECHECK = 1;
     full_theta_0 = [object_theta(:); attribute_theta(:); low_theta(:)];
-    full_theta_1 = minFunc(@(theta) gradient_wrapper(theta, subject_type,subject_num),full_theta_0,options);
+    full_theta_1 = minFunc(@(theta) gradient_wrapper(theta,num_s_clips),full_theta_0,options);
     
     %% previous method
 %         
