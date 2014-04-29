@@ -241,7 +241,12 @@ for gaze_num = 1:size(gaze,1)
     %THIS NEEDS TO CHANGE IF THE COORDINATE SYSTEM IS DIFFERENT THAN I
     %THOUGHT IT WAS
     phi_emp_object_contribution = zeros(10);
-    phi_emp_object_contribution(func_inds(gaze_loc(2),gaze_loc(1))) = 1;
+    try
+        phi_emp_object_contribution(func_inds(gaze_loc(2),gaze_loc(1))) = 1;
+    catch
+        ['DATA/',type_folder,'/',second_folders(subject_num).name]
+        continue
+    end
 
     phi_emp_attribute_contribution = semantic_frame(gaze_loc(2),gaze_loc(1),2:end);
 

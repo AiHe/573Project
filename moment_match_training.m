@@ -9,10 +9,11 @@ function [ full_theta_1 ] = moment_match_training()
 %     lost('test_IDS');
 % end
 
-addpath('minFunc_2012/');
+
+semantic = 0;
 
 
-num_s_clips = 1;
+num_s_clips = 95;
 
 %     eta = 1;
 %     epsilon = 1e-5;
@@ -38,9 +39,14 @@ num_s_clips = 1;
 %         options.LS_type = 0;
 %         options.LS_interp = 1;
     options.useMex = 1;
+    options.MaxIters = 25;
 %         options.DERIVATIVECHECK = 1;
-    full_theta_0 = [object_theta(:); attribute_theta(:); low_theta(:)];
-    full_theta_1 = minFunc(@(theta) gradient_wrapper(theta,num_s_clips),full_theta_0,options);
+    if semantic
+        full_theta_0 = [object_theta(:); attribute_theta(:); low_theta(:)];
+    else
+        full_theta_0 = low_theta(:);
+    end
+    full_theta_1 = minFunc(@(theta) gradient_wrapper(theta,num_s_clips,semantic),full_theta_0,options);
     
     %% previous method
 %         
