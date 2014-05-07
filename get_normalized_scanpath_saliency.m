@@ -99,9 +99,17 @@ for row = 1:size(IDS,1)
         low_frame = imresize(low_frame,height/size(low_frame,1));
         
         %get the probability distribution over the frame
-%         current_frame_p = p_frame(previous_gaze,previous_objects,semantic_frame,...
-%             low_frame,object_theta,attribute_theta,low_theta);
-        current_frame_p = exp(sum(bsxfun(@times,low_frame,low_theta),3));
+        if isequal(zeros(10),object_theta) && isequal(zeros(9,1),attribute_theta(:))
+            add = sum(bsxfun(@times,low_frame,low_theta),3);
+            add = add - max(add(:));
+            current_frame_p = exp(add) + realmin;
+        else
+            current_frame_p = p_frame(previous_gaze,previous_objects,semantic_frame,...
+                low_frame,object_theta,attribute_theta,low_theta);
+        end
+
+%         
+%         current_frame_p = current_frame_p/ sum(current_frame_p(:));
         
         %COMPUTE Z SCORES OF THE PROBABILITY OVER THE IMAGE
         frame_p_z_score = (current_frame_p - mean(current_frame_p(:)))/...

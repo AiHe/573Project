@@ -15,6 +15,12 @@ end
 %num_use = 35;
 
 
+%CHANGE TO AUTISTIC SAMPLES
+autistic = 1;
+if autistic
+    IDS(:,1) = IDS(:,1)-2;
+end
+
 %select random sample of the IDS
 IDS = IDS(randsample(1:size(IDS,1),num_use,'false'),:);
 
@@ -31,6 +37,7 @@ for row = 1:size(IDS,1)
         [log_likelihood_piece, derivative_piece] = ...
             get_subject_clip_training_info_4opt_no_semantic...
             (full_theta,IDS(row,1),IDS(row,2));
+
     end
 
     
@@ -39,7 +46,15 @@ for row = 1:size(IDS,1)
     
 end
 
+log_likelihood = log_likelihood/size(IDS,1);
+derivative = derivative/size(IDS,1);
+
 fprintf('log-likelihood value: %e\n', log_likelihood);
+if ~semantic
+    'Gradient:'
+    derivative'
+    squeeze(full_theta)'
+end
 
 
 toc;

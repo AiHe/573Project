@@ -8,6 +8,8 @@ height = 1024;
 width = 1280;
 D = 114;
 
+lambda = 1;
+
 low_theta = full_theta;
 
 %make sure low and attribute theta are the right shape, Assert not really
@@ -63,17 +65,12 @@ phi_emp_sum = zeros(length(low_theta(:)),1);
 log_likelihood = 0;
 % full_theta = [object_theta(:); attribute_theta(:); low_theta(:)];
 
-previous_gaze = [1 1];
-previous_objects = 10*ones(height,width);
-
 semantic_frame = zeros(height,width,10);
 semantic_frame(:,:,1) = 10;
 
 for gaze_num = 1:size(gaze,1)
 
     gaze_loc = round(gaze(gaze_num,1:2));
-    
-    current_folder = folder_nums(gaze_num);
 
     %LOAD LOW LEVEL FEATURES
     low_frame_name = ['saved_low_frames/',clip_string,'/frame_'...
@@ -87,7 +84,10 @@ for gaze_num = 1:size(gaze,1)
     %get the probability distribution over the frame
 %     current_frame_p = p_frame(previous_gaze,previous_objects,semantic_frame,...
 %         low_frame,object_theta,attribute_theta,low_theta);
-    current_frame_p = exp(sum(bsxfun(@times,low_frame,low_theta),3));
+    exps = sum(bsxfun(@times,low_frame,low_theta),3);
+    exps = exps - max(exps(:));
+
+    current_frame_p = exp(exps) + realmin;
 
     
     
@@ -110,6 +110,12 @@ for gaze_num = 1:size(gaze,1)
         sum(sum(bsxfun(@times,low_frame,current_frame_p),1),2);
     
     current_frame_p = imresize(current_frame_p,height/size(current_frame_p,1));
+    
+    %DONT UPSAMPLE FOR SPEED
+    %low_frame = imresize(low_frame,height/size(low_frame,1));
+    
+    %DOWNSAMPLE GAZE
+    down_gaze = round(gaze_loc * size(low_frame,1)/height);
 
     
     %Assemble the full phi theoretical p-sum for this frame
@@ -118,25 +124,22 @@ for gaze_num = 1:size(gaze,1)
 
     %DIVIDE BY SUM P TO GET THE THEORETICAL EXPECTATION OF PHI FOR THIS
     %FRAME
-    full_phi_theo_contribution = full_phi_theo_contribution/sum(sum(current_frame_p));
+%     full_phi_theo_contribution = full_phi_theo_contribution/sum(sum(current_frame_p));
 
     %ADD THE CONTRIBUTION TO THE FULL SUM TO EVENTUALLY GET MEAN
     %THEORETICAL PHI OVER ALL FRAME LOCATIONS AND ALL FRAMES
     phi_theo_sum = phi_theo_sum + full_phi_theo_contribution;
 
 
-    %% Get empirical phi from this frame
+    % Get empirical phi from this frame
 
     %THIS NEEDS TO CHANGE IF THE COORDINATE SYSTEM IS DIFFERENT THAN I
     %THOUGHT IT WAS
-    phi_emp_object_contribution = zeros(10);
-
-    phi_emp_attribute_contribution = zeros(1,1,9);
-
+    %phi_emp_low_contribution = low_frame(gaze_loc(2),gaze_loc(1),:);
     try
-        phi_emp_low_contribution = low_frame(gaze_loc(2),gaze_loc(1),:);
+        phi_emp_low_contribution = low_frame(down_gaze(2),down_gaze(1),:);
     catch
-        ['DATA/',type_folder,'/',second_folders(subject_num).name,'/sampled_5.mat'];
+        ['DATA/',type_folder,'/',second_folders(subject_num).name,'/sampled_5.mat']
         continue
     end
 
@@ -153,7 +156,8 @@ end
 %log_likelihood = log_likelihood - phi_emp_sum * full_theta;
 
 log_likelihood = -log_likelihood;
-derivative = phi_theo_sum - phi_emp_sum;
+derivative = phi_theo_sum - phi_emp_sum;% + lambda*squeeze(low_theta);
+
 
 
 end

@@ -8,6 +8,8 @@ height = 1024;
 width = 1280;
 D = 114;
 
+lambda = 1/3;
+
 %disassemble theta 
 d_object_theta = 10;
 d_attribute_theta = 9;
@@ -270,7 +272,7 @@ end
 %log_likelihood = log_likelihood - phi_emp_sum * full_theta;
 
 log_likelihood = -log_likelihood;
-derivative = phi_theo_sum - phi_emp_sum;
+derivative = phi_theo_sum - phi_emp_sum + lambda*full_theta(:);
 
 
 end

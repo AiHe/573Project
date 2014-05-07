@@ -10,7 +10,7 @@ function [ full_theta_1 ] = moment_match_training()
 % end
 
 
-semantic = 0;
+semantic = 1;
 
 
 num_s_clips = 95;
@@ -43,8 +43,10 @@ num_s_clips = 95;
 %         options.DERIVATIVECHECK = 1;
     if semantic
         full_theta_0 = [object_theta(:); attribute_theta(:); low_theta(:)];
+%         load('reg_1_full__control_theta.mat');
+%         full_theta_0 = reg_full_theta;
     else
-        full_theta_0 = low_theta(:);
+        full_theta_0 = low_theta(:)/200;
     end
     full_theta_1 = minFunc(@(theta) gradient_wrapper(theta,num_s_clips,semantic),full_theta_0,options);
     
