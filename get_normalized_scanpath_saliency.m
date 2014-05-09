@@ -1,4 +1,4 @@
-function NSS_scores = get_normalized_scanpath_saliency(...
+function [NSS_scores, AUC1_scores, AUC3_scores] = get_normalized_scanpath_saliency(...
     object_theta,attribute_theta,low_theta)
 %UNTITLED34 Summary of this function goes here
 %   Detailed explanation goes here
@@ -14,9 +14,11 @@ end
 
 %Initialize NSS Score array
 NSS_scores = [];
+AUC1_scores = [];
+AUC3_scores = [];
 
 for row = 1:size(IDS,1)
-    row
+    fprintf('row: %i\n', row);  
     
     subject_type = IDS(row,1);
     subject_num = IDS(row,2);
@@ -107,10 +109,38 @@ for row = 1:size(IDS,1)
             current_frame_p = p_frame(previous_gaze,previous_objects,semantic_frame,...
                 low_frame,object_theta,attribute_theta,low_theta);
         end
-
+        
+        %% AUC
+%         current_frame_p, gaze_loc(2),gaze_loc(1),
+        eyeMap = zeros(size(current_frame_p));
+        eyeMap(gaze_loc(2),gaze_loc(1)) = 1;
+        shufMap = zeros(size(current_frame_p));
+        for gaze_num_local = 1:size(gaze,1)
+            if(gaze_num_local == gaze_num); continue;end
+            gaze_loc_local = round(gaze(gaze_num_local,1:2));
+%             if(gaze_loc_local(2)) > 1024; gaze_loc_local(2) = 1024;end
+%             if(gaze_loc_local(1)) > 1280; gaze_loc_local(1) = 1280;end
+            shufMap(gaze_loc_local(2), gaze_loc_local(1)) = 1;
+        end
+        try 
+            AUC3_scores(end+1) = calc_AUC_score( current_frame_p, eyeMap, shufMap);
+        catch
+            ['DATA/',type_folder,'/',second_folders(subject_num).name,'/sampled_5.mat']
+            continue
+        end
+        
+        eyeMap = zeros(size(current_frame_p));
+        eyeMap(gaze_loc(2),gaze_loc(1)) = 1;
+        try
+            AUC1_scores(end+1) = calc_AUC_score( current_frame_p, eyeMap);
+        catch
+            ['DATA/',type_folder,'/',second_folders(subject_num).name,'/sampled_5.mat']
+            continue
+        end
 %         
 %         current_frame_p = current_frame_p/ sum(current_frame_p(:));
         
+        %% NNS
         %COMPUTE Z SCORES OF THE PROBABILITY OVER THE IMAGE
         frame_p_z_score = (current_frame_p - mean(current_frame_p(:)))/...
             std(current_frame_p(:));
@@ -133,6 +163,9 @@ for row = 1:size(IDS,1)
         
         
     end
+    
+    fprintf('mean AUC1: %f\n', mean(AUC1_scores));  
+    fprintf('mean AUC3: %f\n', mean(AUC3_scores));  
     
 end
 
